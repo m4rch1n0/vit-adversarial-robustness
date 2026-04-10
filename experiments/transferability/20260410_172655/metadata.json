@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-04-10T18:12:03.848761",
+  "seed": 42,
+  "models": {
+    "vit": {
+      "config": "configs/default.yaml",
+      "checkpoint": "experiments/train/20260409_175532/model.pt"
+    },
+    "resnet50": {
+      "config": "configs/resnet50.yaml",
+      "checkpoint": "experiments/train/resnet50_lp/20260410_004245/model.pt"
+    },
+    "resnet18": {
+      "config": "configs/resnet18.yaml",
+      "checkpoint": "experiments/train/resnet18_lp/20260410_004525/model.pt"
+    }
+  },
+  "attacks": [
+    "fgsm",
+    "pgd"
+  ],
+  "eps_subset": [
+    2,
+    4,
+    8
+  ],
+  "device": "cuda",
+  "torch_version": "2.11.0+rocm7.2"
+}

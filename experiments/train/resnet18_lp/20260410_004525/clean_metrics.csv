@@ -1,0 +1,6 @@
+metric,value
+acc,0.969427
+avg_conf_correct,0.969688
+avg_conf_wrong,0.566274
+nll,0.091348
+ece,0.013311

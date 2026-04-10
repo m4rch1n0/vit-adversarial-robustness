@@ -1,0 +1,36 @@
+{
+  "timestamp": "2026-04-10T01:10:07.759032",
+  "seed": 42,
+  "checkpoint": "/home/marco/ViT_adv_lab/vit-evasion-decay/experiments/train/resnet50_lp/20260410_004245/model.pt",
+  "model": {
+    "arch": "resnet50",
+    "pretrained": true,
+    "num_classes": 10,
+    "strategy": "linear_probe"
+  },
+  "attacks_config": {
+    "eps_255": [
+      0,
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "pgd": {
+      "steps": 10
+    },
+    "patch_pgd": {
+      "steps": 10,
+      "patch_size": 64,
+      "position": "center"
+    },
+    "salient_patch_pgd": {
+      "steps": 10,
+      "vit_patch_size": 16,
+      "top_k": 20
+    }
+  },
+  "device": "cuda",
+  "torch_version": "2.11.0+rocm7.2"
+}

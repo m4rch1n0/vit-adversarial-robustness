@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-04-09T20:27:59.920320",
+  "seed": 42,
+  "checkpoint": "experiments/train/20260409_175532/model.pt",
+  "model": "vit_base_patch16_224.orig_in21k_ft_in1k",
+  "attacks_config": {
+    "eps_255": [
+      0,
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "pgd": {
+      "steps": 10
+    },
+    "patch_pgd": {
+      "steps": 10,
+      "patch_size": 64,
+      "position": "center"
+    },
+    "salient_patch_pgd": {
+      "steps": 10,
+      "vit_patch_size": 16,
+      "top_k": 20
+    }
+  },
+  "device": "cuda"
+}

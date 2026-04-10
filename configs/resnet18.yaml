@@ -1,0 +1,51 @@
+# ResNet-18 linear probe — lightweight CNN baseline (sanity check / appendix).
+#
+# Training & eval parameters are IDENTICAL to default.yaml (ViT) to ensure
+# a fair comparison.  Only the model section differs.
+#
+# Weights: torchvision IMAGENET1K_V1 (supervised pretraining on ImageNet-1k).
+# Trainable parameters: fc layer only = 512×10 + 10 = 5,130.
+
+# ── Data ──────────────────────────────────────────────────────────────────
+data:
+  path: ./data/imagenette2-160
+  batch_size: 64
+  workers: 4
+  image_size: 224
+
+# ── Model ─────────────────────────────────────────────────────────────────
+model:
+  arch: resnet18
+  pretrained: true
+  num_classes: 10
+  strategy: linear_probe
+
+# ── Training ──────────────────────────────────────────────────────────────
+training:
+  epochs: 10
+  lr: 1.0e-3
+  weight_decay: 0.01
+  scheduler: cosine
+
+# ── Attacks ───────────────────────────────────────────────────────────────
+attacks:
+  eps_255: [0, 1, 2, 4, 8, 16]
+  pgd:
+    steps: 10
+  patch_pgd:
+    steps: 10
+    patch_size: 64
+    position: center
+  salient_patch_pgd:
+    steps: 10
+    vit_patch_size: 16
+    top_k: 20
+
+# ── Evaluation ────────────────────────────────────────────────────────────
+eval:
+  compute_calibration: true
+
+# ── Reproducibility ───────────────────────────────────────────────────────
+seed: 42
+device: cuda
+output_dir: ./experiments

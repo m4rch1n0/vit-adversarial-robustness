@@ -1,0 +1,81 @@
+attack,eps_255,class_idx,class_name,acc,mean_conf,n_samples
+fgsm,0,0,tench,0.997416,0.993222,387
+fgsm,0,1,English springer,0.992405,0.992574,395
+fgsm,0,2,cassette player,0.980392,0.978227,357
+fgsm,0,3,chain saw,0.989637,0.977584,386
+fgsm,0,4,church,0.992665,0.991529,409
+fgsm,0,5,French horn,0.992386,0.988093,394
+fgsm,0,6,garbage truck,0.989717,0.990379,389
+fgsm,0,7,gas pump,0.968974,0.976367,419
+fgsm,0,8,golf ball,0.994987,0.993533,399
+fgsm,0,9,parachute,0.992308,0.990233,390
+fgsm,2,0,tench,0.855297,0.882645,387
+fgsm,2,1,English springer,0.870886,0.866713,395
+fgsm,2,2,cassette player,0.641457,0.790906,357
+fgsm,2,3,chain saw,0.492228,0.712983,386
+fgsm,2,4,church,0.797066,0.834818,409
+fgsm,2,5,French horn,0.791878,0.884088,394
+fgsm,2,6,garbage truck,0.619537,0.796876,389
+fgsm,2,7,gas pump,0.563246,0.813445,419
+fgsm,2,8,golf ball,0.85213,0.896521,399
+fgsm,2,9,parachute,0.779487,0.850679,390
+fgsm,4,0,tench,0.803618,0.854826,387
+fgsm,4,1,English springer,0.843038,0.830565,395
+fgsm,4,2,cassette player,0.54902,0.759639,357
+fgsm,4,3,chain saw,0.38601,0.667764,386
+fgsm,4,4,church,0.750611,0.801077,409
+fgsm,4,5,French horn,0.753807,0.860559,394
+fgsm,4,6,garbage truck,0.526992,0.747529,389
+fgsm,4,7,gas pump,0.470167,0.777498,419
+fgsm,4,8,golf ball,0.796992,0.856076,399
+fgsm,4,9,parachute,0.723077,0.812926,390
+fgsm,8,0,tench,0.780362,0.834531,387
+fgsm,8,1,English springer,0.792405,0.802534,395
+fgsm,8,2,cassette player,0.529412,0.741786,357
+fgsm,8,3,chain saw,0.341969,0.648845,386
+fgsm,8,4,church,0.748166,0.799811,409
+fgsm,8,5,French horn,0.728426,0.841355,394
+fgsm,8,6,garbage truck,0.447301,0.720103,389
+fgsm,8,7,gas pump,0.424821,0.758455,419
+fgsm,8,8,golf ball,0.716792,0.798177,399
+fgsm,8,9,parachute,0.679487,0.784323,390
+pgd,0,0,tench,0.997416,0.993222,387
+pgd,0,1,English springer,0.992405,0.992574,395
+pgd,0,2,cassette player,0.980392,0.978227,357
+pgd,0,3,chain saw,0.989637,0.977584,386
+pgd,0,4,church,0.992665,0.991529,409
+pgd,0,5,French horn,0.992386,0.988093,394
+pgd,0,6,garbage truck,0.989717,0.990379,389
+pgd,0,7,gas pump,0.968974,0.976367,419
+pgd,0,8,golf ball,0.994987,0.993533,399
+pgd,0,9,parachute,0.992308,0.990233,390
+pgd,2,0,tench,0.209302,0.802029,387
+pgd,2,1,English springer,0.091139,0.785029,395
+pgd,2,2,cassette player,0.053221,0.902669,357
+pgd,2,3,chain saw,0.031088,0.945171,386
+pgd,2,4,church,0.112469,0.867176,409
+pgd,2,5,French horn,0.246193,0.903543,394
+pgd,2,6,garbage truck,0.025707,0.947694,389
+pgd,2,7,gas pump,0.031026,0.934741,419
+pgd,2,8,golf ball,0.192982,0.870152,399
+pgd,2,9,parachute,0.207692,0.8965,390
+pgd,4,0,tench,0.005168,0.891234,387
+pgd,4,1,English springer,0.002532,0.908751,395
+pgd,4,2,cassette player,0.002801,0.967174,357
+pgd,4,3,chain saw,0.007772,0.983637,386
+pgd,4,4,church,0.012225,0.935577,409
+pgd,4,5,French horn,0.073604,0.945919,394
+pgd,4,6,garbage truck,0.0,0.994639,389
+pgd,4,7,gas pump,0.0,0.984306,419
+pgd,4,8,golf ball,0.017544,0.915566,399
+pgd,4,9,parachute,0.066667,0.933307,390
+pgd,8,0,tench,0.0,0.961377,387
+pgd,8,1,English springer,0.0,0.96302,395
+pgd,8,2,cassette player,0.0,0.988447,357
+pgd,8,3,chain saw,0.0,0.996821,386
+pgd,8,4,church,0.0,0.978809,409
+pgd,8,5,French horn,0.007614,0.976051,394
+pgd,8,6,garbage truck,0.0,0.999488,389
+pgd,8,7,gas pump,0.0,0.990804,419
+pgd,8,8,golf ball,0.0,0.962201,399
+pgd,8,9,parachute,0.015385,0.969299,390

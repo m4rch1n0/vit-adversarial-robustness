@@ -1,0 +1,9 @@
+model,attack,audc_accuracy,audc_conf_wrong
+ViT-Base/16,FGSM,0.6353,0.6136
+ViT-Base/16,PGD-10,0.03,0.9621
+ViT-Base/16,Patch-PGD (centre),0.6519,0.7896
+ViT-Base/16,Salient-patch PGD,0.5047,0.8322
+ResNet-18,FGSM,0.3166,0.6009
+ResNet-18,PGD-10,0.0,0.9999
+ResNet-18,Patch-PGD (centre),0.3269,0.868
+ResNet-18,Salient-patch PGD,0.1073,0.9244

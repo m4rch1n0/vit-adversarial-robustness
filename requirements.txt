@@ -1,0 +1,8 @@
+torch>=2.0
+torchvision>=0.15
+timm>=1.0
+numpy
+matplotlib
+pandas
+pyyaml
+tqdm

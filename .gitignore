@@ -1,0 +1,35 @@
+# ── Data (too large for git) ──────────────────────────────────────────────
+data/
+
+# ── Model checkpoints (use training scripts to reproduce) ────────────────
+experiments/**/model.pt
+
+# ── Experiment logs (raw terminal output) ────────────────────────────────
+experiments/*.log
+
+# ── Internal development files (kept locally, not published) ─────────────
+plan.md
+IMPLEMENTATION_GUIDE.md
+docs/
+run_point_*.sh
+
+# ── Python ────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+.ipynb_checkpoints/
+
+# ── IDE / editor ─────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── OS ────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

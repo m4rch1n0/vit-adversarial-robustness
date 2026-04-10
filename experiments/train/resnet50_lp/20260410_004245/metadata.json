@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-04-10T00:45:23.379265",
+  "seed": 42,
+  "model": {
+    "arch": "resnet50",
+    "pretrained": true,
+    "num_classes": 10,
+    "strategy": "linear_probe"
+  },
+  "training": {
+    "epochs": 10,
+    "lr": 0.001,
+    "weight_decay": 0.01,
+    "scheduler": "cosine"
+  },
+  "data_path": "./data/imagenette2-160",
+  "clean_accuracy": 0.9892993630573248,
+  "trainable_params": 20490,
+  "device": "cuda",
+  "torch_version": "2.11.0+rocm7.2"
+}

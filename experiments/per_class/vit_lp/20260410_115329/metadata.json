@@ -1,0 +1,52 @@
+{
+  "timestamp": "2026-04-10T12:08:51.191799",
+  "seed": 42,
+  "checkpoint": "experiments/train/20260409_175532/model.pt",
+  "model": {
+    "arch": "vit",
+    "name": "vit_base_patch16_224.orig_in21k_ft_in1k",
+    "pretrained": true,
+    "num_classes": 10,
+    "strategy": "linear_probe"
+  },
+  "attacks_analysed": [
+    "fgsm",
+    "pgd"
+  ],
+  "eps_subset": [
+    0,
+    2,
+    4,
+    8
+  ],
+  "cm_eps": [
+    4,
+    8
+  ],
+  "class_names": [
+    "tench",
+    "English springer",
+    "cassette player",
+    "chain saw",
+    "church",
+    "French horn",
+    "garbage truck",
+    "gas pump",
+    "golf ball",
+    "parachute"
+  ],
+  "samples_per_class": [
+    387,
+    395,
+    357,
+    386,
+    409,
+    394,
+    389,
+    419,
+    399,
+    390
+  ],
+  "device": "cuda",
+  "torch_version": "2.11.0+rocm7.2"
+}

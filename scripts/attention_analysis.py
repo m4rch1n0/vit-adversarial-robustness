@@ -15,7 +15,7 @@ Usage
 -----
     python scripts/attention_analysis.py \\
         --config configs/default.yaml \\
-        --checkpoint experiments/train/20260409_175532/model.pt
+        --checkpoint experiments/train/vit_lp/<timestamp>/model.pt
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ from src.attention import (
     get_attention_maps,
     rollout_to_heatmap,
 )
-from src.data import denorm, get_loaders
+from src.data import get_loaders
 from src.utils import run_dir, save_csv, save_metadata, set_seed
 
 
@@ -239,7 +239,7 @@ def generate_heatmap_grid(
 
     # Convert to numpy for plotting
     def to_np(t: torch.Tensor) -> np.ndarray:
-        return denorm(t).clamp(0, 1).cpu().permute(0, 2, 3, 1).numpy()
+        return t.clamp(0, 1).cpu().permute(0, 2, 3, 1).numpy()
 
     imgs_np = to_np(imgs)
     fgsm_np = to_np(x_fgsm)

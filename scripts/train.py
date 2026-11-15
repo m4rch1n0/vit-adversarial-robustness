@@ -85,7 +85,8 @@ def main() -> None:
     trainable = _count_trainable(model)
     print(f"Architecture: {arch}  |  Strategy: {strategy}  |  Trainable params: {trainable:,}")
 
-    head_module = get_head(model, arch)
+    head_module = get_head(model)
+    backbone_before = model.backbone_state() if strategy == "linear_probe" else None
 
     if strategy == "full" and arch == "vit":
         param_groups = get_param_groups(
@@ -113,6 +114,15 @@ def main() -> None:
         epoch_bar.set_postfix(loss=f"{avg_loss:.4f}", val_acc=f"{val_result['acc']:.4f}")
         tqdm.write(f"Epoch {epoch}/{epochs}  loss={avg_loss:.4f}  val_acc={val_result['acc']:.4f}")
 
+    if backbone_before is not None:
+        # Linear probe: the frozen backbone (weights *and* BatchNorm buffers)
+        # must be exactly the pretrained one; only the head is trained.
+        backbone_after = model.backbone_state()
+        changed = [k for k in backbone_before if not torch.equal(backbone_before[k], backbone_after[k])]
+        if changed:
+            raise RuntimeError(f"Frozen backbone changed during training: {changed[:5]} ...")
+        tqdm.write(f"Backbone check: {len(backbone_before)} tensors unchanged")
+
     torch.save(model.state_dict(), out / "model.pt")
     print(f"Checkpoint saved: {out / 'model.pt'}")
 
@@ -128,6 +138,9 @@ def main() -> None:
         training=cfg["training"],
         data_path=cfg["data"]["path"],
         clean_accuracy=clean["acc"],
+        input_mean=model.mean.flatten().tolist(),
+        input_std=model.std.flatten().tolist(),
+        backbone_unchanged=backbone_before is not None,
         trainable_params=trainable,
         device=device,
         torch_version=torch.__version__,

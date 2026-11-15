@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-04-10T01:17:05.318306",
+  "timestamp": "2026-11-12T01:06:21.595795",
   "seed": 42,
-  "checkpoint": "/home/marco/ViT_adv_lab/vit-evasion-decay/experiments/train/resnet18_lp/20260410_004525/model.pt",
+  "checkpoint": "experiments/train/resnet18_lp/20261111_232444/model.pt",
   "model": {
     "arch": "resnet18",
     "pretrained": true,

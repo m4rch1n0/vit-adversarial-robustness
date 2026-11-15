@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-04-10T12:08:51.191799",
+  "timestamp": "2026-11-12T02:43:43.665561",
   "seed": 42,
-  "checkpoint": "experiments/train/20260409_175532/model.pt",
+  "checkpoint": "experiments/train/vit_lp/20261111_231457/model.pt",
   "model": {
     "arch": "vit",
     "name": "vit_base_patch16_224.orig_in21k_ft_in1k",

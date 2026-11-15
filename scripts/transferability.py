@@ -17,7 +17,7 @@ Usage
 -----
     python scripts/transferability.py \\
         --config configs/default.yaml \\
-        --models vit:configs/default.yaml:experiments/train/20260409_175532/model.pt \\
+        --models vit:configs/default.yaml:experiments/train/vit_lp/<timestamp>/model.pt \\
                  resnet50:configs/resnet50.yaml:<resnet50_checkpoint> \\
                  resnet18:configs/resnet18.yaml:<resnet18_checkpoint>
 """

@@ -5,8 +5,8 @@ from the CLS token to spatial patches across all transformer layers.
 
 Key functions
 -------------
-- ``get_attention_maps``  — extract per-layer attention matrices via
-  monkey-patched forward (bypasses fused SDPA in timm >=1.0).
+- ``get_attention_maps``  — extract per-layer attention matrices with
+  forward hooks on timm's explicit (non-fused) attention path.
 - ``attention_rollout``   — multiplicative rollout with residual
   identity mixing (Abnar et al., 2020).
 - ``rollout_to_heatmap``  — reshape rollout vector to a spatial heatmap
@@ -19,7 +19,6 @@ Key functions
 
 from __future__ import annotations
 
-import types
 from contextlib import contextmanager
 from typing import Generator
 
@@ -28,52 +27,41 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-@contextmanager
-def _patched_attention(model: nn.Module) -> Generator[list[torch.Tensor], None, None]:
-    """Context manager that monkey-patches every ``Attention.forward`` in
-    *model* to capture the softmax attention weights, then restores the
-    originals on exit.
+def _vit_core(model: nn.Module) -> nn.Module:
+    """Return the timm ViT inside a ``NormalizedClassifier`` (or the model itself)."""
+    return getattr(model, "backbone", model)
 
-    Yields a list that gets populated with one ``(B, H, N, N)`` tensor
-    per block during the next forward pass.
+
+@contextmanager
+def _captured_attention(model: nn.Module) -> Generator[list[torch.Tensor], None, None]:
+    """Capture the softmax attention weights of every block.
+
+    timm computes attention with fused SDPA by default, which never
+    materialises the weights. Inside this context every block falls back to
+    timm's own explicit path (``fused_attn = False``) and a forward hook on
+    ``attn_drop`` (identity at eval time) records its input, i.e. the
+    post-softmax attention ``(B, H, N, N)``. The model computation is
+    otherwise unchanged; the original settings are restored on exit.
     """
     storage: list[torch.Tensor] = []
-    originals: list[tuple[nn.Module, object]] = []
+    saved: list[tuple[nn.Module, bool]] = []
+    handles = []
 
-    for block in model.blocks:
+    for block in _vit_core(model).blocks:
         attn_module = block.attn
-        originals.append((attn_module, attn_module.forward))
-
-        def _make_patched(store: list[torch.Tensor]):
-            def patched_forward(self, x: torch.Tensor, **_kwargs) -> torch.Tensor:
-                B, N, C = x.shape
-                qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, self.head_dim)
-                qkv = qkv.permute(2, 0, 3, 1, 4)
-                q, k, v = qkv.unbind(0)
-                q, k = self.q_norm(q), self.k_norm(k)
-
-                attn = (q @ k.transpose(-2, -1)) * self.scale
-                attn = attn.softmax(dim=-1)
-                store.append(attn.detach().cpu())
-                attn = self.attn_drop(attn)
-
-                x = (attn @ v).transpose(1, 2).reshape(B, N, self.attn_dim)
-                x = self.norm(x)
-                x = self.proj(x)
-                x = self.proj_drop(x)
-                return x
-
-            return patched_forward
-
-        attn_module.forward = types.MethodType(
-            _make_patched(storage), attn_module
-        )
+        saved.append((attn_module, attn_module.fused_attn))
+        attn_module.fused_attn = False
+        handles.append(attn_module.attn_drop.register_forward_hook(
+            lambda _m, inputs, _out: storage.append(inputs[0].detach().cpu())
+        ))
 
     try:
         yield storage
     finally:
-        for module, orig_fwd in originals:
-            module.forward = orig_fwd
+        for h in handles:
+            h.remove()
+        for module, fused in saved:
+            module.fused_attn = fused
 
 
 def get_attention_maps(
@@ -84,14 +72,14 @@ def get_attention_maps(
 
     Parameters
     ----------
-    model : a timm ViT model (must have ``model.blocks``).
-    x     : input tensor, ImageNet-normalised, shape ``(B, 3, H, W)``.
+    model : a timm ViT, or a ``NormalizedClassifier`` wrapping one.
+    x     : input tensor; [0, 1] pixels when *model* is a ``NormalizedClassifier``.
 
     Returns
     -------
     list of ``(B, H, N, N)`` tensors (one per block, on CPU).
     """
-    with _patched_attention(model) as storage:
+    with _captured_attention(model) as storage:
         with torch.no_grad():
             _ = model(x)
     return storage

@@ -1,8 +1,13 @@
 {
-  "timestamp": "2026-04-09T20:27:59.920320",
+  "timestamp": "2026-11-12T01:00:17.162086",
   "seed": 42,
-  "checkpoint": "experiments/train/20260409_175532/model.pt",
-  "model": "vit_base_patch16_224.orig_in21k_ft_in1k",
+  "checkpoint": "experiments/train/resnet50_lp/20261111_232224/model.pt",
+  "model": {
+    "arch": "resnet50",
+    "pretrained": true,
+    "num_classes": 10,
+    "strategy": "linear_probe"
+  },
   "attacks_config": {
     "eps_255": [
       0,
@@ -26,5 +31,6 @@
       "top_k": 20
     }
   },
-  "device": "cuda"
+  "device": "cuda",
+  "torch_version": "2.11.0+rocm7.2"
 }

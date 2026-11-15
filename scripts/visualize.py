@@ -28,7 +28,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.attacks import ATTACKS
-from src.data import denorm, get_loaders
+from src.data import get_loaders
 from src import build_model, load_checkpoint
 
 # ── Style constants ───────────────────────────────────────────────────────
@@ -52,8 +52,9 @@ ATTACK_COLORS = {
 def compute_audc(eps_values: np.ndarray, metric_values: np.ndarray) -> float:
     """Area Under the Decay Curve via trapezoidal integration.
 
-    Normalised to [0, 1] by dividing by the epsilon range so that AUDC
-    represents the average metric value across the epsilon sweep.
+    Normalised to [0, 1] by dividing by the epsilon range, so that AUDC is
+    the mean metric value over the sweep on a linear ε axis (clean point
+    at ε = 0 included by the caller).
     """
     if len(eps_values) < 2:
         return float(metric_values[0]) if len(metric_values) else 0.0
@@ -276,9 +277,9 @@ def generate_audc_table(
         for atk in df["attack"].unique():
             if atk == "clean":
                 continue
-            sub = df[df["attack"] == atk].sort_values("eps_255")
-            audc_acc = compute_audc(sub["eps_255"].values, sub["acc"].values)
-            audc_conf_wrong = compute_audc(sub["eps_255"].values, sub["avg_conf_wrong"].values)
+            # The curve starts from the clean point (ε = 0), as in the plots.
+            audc_acc = compute_audc(*_prepend_clean(df, atk, "acc"))
+            audc_conf_wrong = compute_audc(*_prepend_clean(df, atk, "avg_conf_wrong"))
             rows.append({
                 "model": label,
                 "attack": ATTACK_LABELS.get(atk, atk),
@@ -342,7 +343,7 @@ def generate_qualitative_grid(
     def to_numpy(t: torch.Tensor) -> np.ndarray:
         if t.dim() == 3:
             t = t.unsqueeze(0)
-        img = denorm(t).squeeze(0).clamp(0, 1).cpu().permute(1, 2, 0).numpy()
+        img = t.squeeze(0).clamp(0, 1).cpu().permute(1, 2, 0).numpy()
         return img
 
     def annotate(ax, img_tensor, model, label_true):

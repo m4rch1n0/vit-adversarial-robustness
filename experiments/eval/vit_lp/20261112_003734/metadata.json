@@ -1,9 +1,10 @@
 {
-  "timestamp": "2026-04-10T01:10:07.759032",
+  "timestamp": "2026-11-12T00:37:34.020026",
   "seed": 42,
-  "checkpoint": "/home/marco/ViT_adv_lab/vit-evasion-decay/experiments/train/resnet50_lp/20260410_004245/model.pt",
+  "checkpoint": "experiments/train/vit_lp/20261111_231457/model.pt",
   "model": {
-    "arch": "resnet50",
+    "arch": "vit",
+    "name": "vit_base_patch16_224.orig_in21k_ft_in1k",
     "pretrained": true,
     "num_classes": 10,
     "strategy": "linear_probe"

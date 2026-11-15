@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-10T00:46:44.795623",
+  "timestamp": "2026-11-11T23:25:47.888879",
   "seed": 42,
   "model": {
     "arch": "resnet18",
@@ -14,7 +14,18 @@
     "scheduler": "cosine"
   },
   "data_path": "./data/imagenette2-160",
-  "clean_accuracy": 0.9694267515923567,
+  "clean_accuracy": 0.9760509554140128,
+  "input_mean": [
+    0.48500001430511475,
+    0.4560000002384186,
+    0.4059999883174896
+  ],
+  "input_std": [
+    0.2290000021457672,
+    0.2240000069141388,
+    0.22499999403953552
+  ],
+  "backbone_unchanged": true,
   "trainable_params": 5130,
   "device": "cuda",
   "torch_version": "2.11.0+rocm7.2"

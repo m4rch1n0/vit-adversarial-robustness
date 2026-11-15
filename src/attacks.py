@@ -2,24 +2,19 @@
 
 All attacks follow the same callable protocol:
 
-    attack(model, x_norm, y, *, eps_pix, **kwargs) -> x_adv_norm
+    attack(model, x, y, *, eps_pix, **kwargs) -> x_adv
 
 where:
-    model    - the target classifier (in eval mode)
-    x_norm   - batch of ImageNet-normalised inputs
+    model    - the target classifier (in eval mode), taking [0, 1] pixels
+    x        - batch of images in [0, 1] pixel space
     y        - ground-truth labels
     eps_pix  - L∞ budget in [0, 1] pixel scale
-    returns  - adversarial examples, ImageNet-normalised
+    returns  - adversarial examples in [0, 1] pixel space
 
-Perturbations are computed in pixel space [0, 1] (denorm → perturb → clip →
-renorm), consistent with the prior project's convention.
-
-Extension point for training-time attacks
------------------------------------------
-Training-time attacks (poisoning, backdoor) modify the *dataset*, not the test
-input.  They do not share this function signature and belong in a separate
-module (e.g. ``poisoning.py``) that wraps or subclasses the dataset.  The config
-schema already reserves a ``poisoning`` key for this purpose.
+Each model applies the input normalisation of its own pretraining inside its
+forward pass (``src/wrapper.py``), so the budget is defined in the same pixel
+space for every architecture. Gradients are taken with respect to the input
+only (``torch.autograd.grad``), leaving the model parameters untouched.
 """
 
 from __future__ import annotations
@@ -28,8 +23,41 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
-from .data import denorm, renorm
+
+def _input_grad(model: nn.Module, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    """Gradient of the cross-entropy loss with respect to the input pixels."""
+    x = x.detach().requires_grad_(True)
+    loss = F.cross_entropy(model(x), y)
+    (grad,) = torch.autograd.grad(loss, x)
+    return grad.detach()
+
+
+def _pgd_masked(
+    model: nn.Module,
+    x0: torch.Tensor,
+    y: torch.Tensor,
+    mask: torch.Tensor,
+    eps_pix: float,
+    steps: int,
+    alpha_pix: float,
+) -> torch.Tensor:
+    """L∞ PGD with random start, restricted to the region where ``mask == 1``.
+
+    With an all-ones mask this is standard PGD (Madry et al., 2017).
+    """
+    x = x0 + mask * torch.empty_like(x0).uniform_(-eps_pix, eps_pix)
+    x = torch.clamp(x, 0.0, 1.0)
+
+    for _ in range(steps):
+        grad = _input_grad(model, x, y) * mask
+        x = x + alpha_pix * grad.sign()
+        x = torch.max(torch.min(x, x0 + eps_pix * mask), x0 - eps_pix * mask)
+        x = mask * x + (1 - mask) * x0
+        x = torch.clamp(x, 0.0, 1.0)
+
+    return x.detach()
 
 
 # ---------------------------------------------------------------------------
@@ -38,22 +66,16 @@ from .data import denorm, renorm
 
 def fgsm(
     model: nn.Module,
-    x_norm: torch.Tensor,
+    x: torch.Tensor,
     y: torch.Tensor,
     *,
     eps_pix: float,
 ) -> torch.Tensor:
     """Fast Gradient Sign Method (Goodfellow et al., 2014). Single-step, L∞."""
     model.eval()
-    x_pix = denorm(x_norm).detach()
-    x_pix.requires_grad_(True)
-
-    logits = model(renorm(x_pix))
-    loss = nn.CrossEntropyLoss()(logits, y)
-    loss.backward()
-
-    x_adv = torch.clamp(x_pix + eps_pix * x_pix.grad.sign(), 0.0, 1.0)
-    return renorm(x_adv).detach()
+    x0 = x.detach()
+    grad = _input_grad(model, x0, y)
+    return torch.clamp(x0 + eps_pix * grad.sign(), 0.0, 1.0).detach()
 
 
 # ---------------------------------------------------------------------------
@@ -62,7 +84,7 @@ def fgsm(
 
 def pgd(
     model: nn.Module,
-    x_norm: torch.Tensor,
+    x: torch.Tensor,
     y: torch.Tensor,
     *,
     eps_pix: float,
@@ -73,27 +95,10 @@ def pgd(
 
     Defaults: alpha = eps / 4, random start within the L∞ ball.
     """
-    if alpha_pix is None:
-        alpha_pix = eps_pix / 4.0
-
     model.eval()
-    x0 = denorm(x_norm).detach()
-
-    # random start
-    x = x0 + torch.empty_like(x0).uniform_(-eps_pix, eps_pix)
-    x = torch.clamp(x, 0.0, 1.0)
-
-    for _ in range(steps):
-        x = x.detach().requires_grad_(True)
-        logits = model(renorm(x))
-        loss = nn.CrossEntropyLoss()(logits, y)
-        loss.backward()
-
-        x = x.detach() + alpha_pix * x.grad.sign()
-        x = torch.max(torch.min(x, x0 + eps_pix), x0 - eps_pix)
-        x = torch.clamp(x, 0.0, 1.0)
-
-    return renorm(x).detach()
+    x0 = x.detach()
+    mask = torch.ones_like(x0[:, :1])
+    return _pgd_masked(model, x0, y, mask, eps_pix, steps, alpha_pix or eps_pix / 4.0)
 
 
 # ---------------------------------------------------------------------------
@@ -120,7 +125,7 @@ def _make_spatial_mask(
 
 def patch_pgd(
     model: nn.Module,
-    x_norm: torch.Tensor,
+    x: torch.Tensor,
     y: torch.Tensor,
     *,
     eps_pix: float,
@@ -130,77 +135,50 @@ def patch_pgd(
     position: str = "center",
 ) -> torch.Tensor:
     """PGD constrained to a fixed spatial patch (L∞ within the patch, zero outside)."""
-    if alpha_pix is None:
-        alpha_pix = eps_pix / 4.0
-
     model.eval()
-    x0 = denorm(x_norm).detach()
+    x0 = x.detach()
     _, _, h, w = x0.shape
     mask = _make_spatial_mask(h, w, patch_size, position=position, device=x0.device)
-
-    x = x0 + mask * torch.empty_like(x0).uniform_(-eps_pix, eps_pix)
-    x = torch.clamp(x, 0.0, 1.0)
-
-    for _ in range(steps):
-        x = x.detach().requires_grad_(True)
-        logits = model(renorm(x))
-        loss = nn.CrossEntropyLoss()(logits, y)
-        loss.backward()
-
-        grad = x.grad * mask
-        x = x.detach() + alpha_pix * grad.sign()
-        x = torch.max(torch.min(x, x0 + eps_pix * mask), x0 - eps_pix * mask)
-        # keep unmasked pixels identical to the original
-        x = mask * x + (1 - mask) * x0
-        x = torch.clamp(x, 0.0, 1.0)
-
-    return renorm(x).detach()
+    return _pgd_masked(model, x0, y, mask, eps_pix, steps, alpha_pix or eps_pix / 4.0)
 
 
-def _gradient_patch_indices(
+def _gradient_patch_mask(
     model: nn.Module,
-    x_norm: torch.Tensor,
+    x: torch.Tensor,
     y: torch.Tensor,
     vit_patch_size: int = 16,
     top_k: int = 20,
 ) -> torch.Tensor:
-    """Select top-k ViT patches by gradient magnitude (per image in the batch).
+    """Select the top-k cells of a ``vit_patch_size`` grid by input-gradient norm.
 
-    Returns a (B, 1, H, W) binary mask in pixel space.
+    The gradient is computed once on the clean image, with the attacked
+    model's own gradient. Returns a (B, 1, H, W) binary mask in pixel space.
     """
-    model.eval()
-    x_pix = denorm(x_norm).detach().requires_grad_(True)
-    logits = model(renorm(x_pix))
-    loss = nn.CrossEntropyLoss()(logits, y)
-    loss.backward()
-
-    grad = x_pix.grad.detach()
+    grad = _input_grad(model, x, y)
     b, c, h, w = grad.shape
     ph = h // vit_patch_size
     pw = w // vit_patch_size
 
-    # reshape to (B, C, ph, ps, pw, ps) then take L2 norm per patch
-    grad_patches = grad[:, :, :ph * vit_patch_size, :pw * vit_patch_size]
-    grad_patches = grad_patches.reshape(b, c, ph, vit_patch_size, pw, vit_patch_size)
-    patch_norms = (grad_patches ** 2).sum(dim=(1, 3, 5)).sqrt()  # (B, ph, pw)
+    # reshape to (B, C, ph, ps, pw, ps) then take L2 norm per cell
+    cells = grad[:, :, :ph * vit_patch_size, :pw * vit_patch_size]
+    cells = cells.reshape(b, c, ph, vit_patch_size, pw, vit_patch_size)
+    cell_norms = (cells ** 2).sum(dim=(1, 3, 5)).sqrt()  # (B, ph, pw)
 
-    # top-k per image
-    flat = patch_norms.view(b, -1)
-    _, topk_idx = flat.topk(min(top_k, flat.shape[1]), dim=1)
+    _, topk_idx = cell_norms.view(b, -1).topk(min(top_k, ph * pw), dim=1)
 
-    mask = torch.zeros(b, 1, h, w, device=x_pix.device)
-    for i in range(b):
-        for idx in topk_idx[i]:
-            py = (idx // pw) * vit_patch_size
-            px = (idx % pw) * vit_patch_size
-            mask[i, :, py:py + vit_patch_size, px:px + vit_patch_size] = 1.0
-
+    cell_mask = torch.zeros(b, ph * pw, device=x.device)
+    cell_mask.scatter_(1, topk_idx, 1.0)
+    cell_mask = cell_mask.view(b, 1, ph, pw)
+    mask = torch.zeros(b, 1, h, w, device=x.device)
+    mask[:, :, :ph * vit_patch_size, :pw * vit_patch_size] = cell_mask.repeat_interleave(
+        vit_patch_size, dim=2
+    ).repeat_interleave(vit_patch_size, dim=3)
     return mask
 
 
 def salient_patch_pgd(
     model: nn.Module,
-    x_norm: torch.Tensor,
+    x: torch.Tensor,
     y: torch.Tensor,
     *,
     eps_pix: float,
@@ -209,30 +187,11 @@ def salient_patch_pgd(
     vit_patch_size: int = 16,
     top_k: int = 20,
 ) -> torch.Tensor:
-    """PGD restricted to the top-k most gradient-salient ViT patches."""
-    if alpha_pix is None:
-        alpha_pix = eps_pix / 4.0
-
+    """PGD restricted to the top-k most gradient-salient 16x16 cells."""
     model.eval()
-    mask = _gradient_patch_indices(model, x_norm, y, vit_patch_size=vit_patch_size, top_k=top_k)
-    x0 = denorm(x_norm).detach()
-
-    x = x0 + mask * torch.empty_like(x0).uniform_(-eps_pix, eps_pix)
-    x = torch.clamp(x, 0.0, 1.0)
-
-    for _ in range(steps):
-        x = x.detach().requires_grad_(True)
-        logits = model(renorm(x))
-        loss = nn.CrossEntropyLoss()(logits, y)
-        loss.backward()
-
-        grad = x.grad * mask
-        x = x.detach() + alpha_pix * grad.sign()
-        x = torch.max(torch.min(x, x0 + eps_pix * mask), x0 - eps_pix * mask)
-        x = mask * x + (1 - mask) * x0
-        x = torch.clamp(x, 0.0, 1.0)
-
-    return renorm(x).detach()
+    x0 = x.detach()
+    mask = _gradient_patch_mask(model, x0, y, vit_patch_size=vit_patch_size, top_k=top_k)
+    return _pgd_masked(model, x0, y, mask, eps_pix, steps, alpha_pix or eps_pix / 4.0)
 
 
 # ---------------------------------------------------------------------------

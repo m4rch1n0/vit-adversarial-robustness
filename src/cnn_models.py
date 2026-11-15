@@ -6,10 +6,11 @@ replaces the final fully-connected layer with a fresh ``nn.Linear``.
 
 Design note — weight selection
 ------------------------------
-We deliberately use ``IMAGENET1K_V1`` (the classic supervised baseline) rather
-than V2 (SWAG / semi-weakly supervised) to keep the pretraining regime
-comparable to the ViT checkpoint (``orig_in21k_ft_in1k``).  Both families
-were pretrained on ImageNet-scale data with standard supervision.
+We use ``IMAGENET1K_V1``, the classic supervised ImageNet-1k baseline. The ViT
+checkpoint (``orig_in21k_ft_in1k``) was instead pretrained on ImageNet-21k and
+fine-tuned on ImageNet-1k, so the pretraining data of the two families is not
+the same; this is a declared limitation of the comparison, not a matched
+setting.
 """
 
 from __future__ import annotations
@@ -26,6 +27,13 @@ _WEIGHTS = {
     "resnet18": models.ResNet18_Weights.IMAGENET1K_V1,
     "resnet50": models.ResNet50_Weights.IMAGENET1K_V1,
 }
+
+
+def cnn_normalization(arch: CNNArch) -> tuple[tuple[float, ...], tuple[float, ...]]:
+    """Input mean/std used by the torchvision pretrained weights of *arch*."""
+    preprocess = _WEIGHTS[arch].transforms()
+    return tuple(preprocess.mean), tuple(preprocess.std)
+
 
 _BUILDERS = {
     "resnet18": models.resnet18,

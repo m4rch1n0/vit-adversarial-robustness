@@ -16,7 +16,7 @@ Usage
 -----
     python scripts/per_class_analysis.py \\
         --config configs/default.yaml \\
-        --checkpoint experiments/train/20260409_175532/model.pt
+        --checkpoint experiments/train/vit_lp/<timestamp>/model.pt
 """
 
 from __future__ import annotations
